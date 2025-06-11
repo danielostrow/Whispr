@@ -1,5 +1,10 @@
 # Whispr 🎙️
 
+[![Python Tests](https://github.com/danielostrow/Whispr/actions/workflows/python-tests.yml/badge.svg)](https://github.com/danielostrow/Whispr/actions/workflows/python-tests.yml)
+[![Python Lint](https://github.com/danielostrow/Whispr/actions/workflows/python-lint.yml/badge.svg)](https://github.com/danielostrow/Whispr/actions/workflows/python-lint.yml)
+[![C Extensions Build](https://github.com/danielostrow/Whispr/actions/workflows/c-extensions-build.yml/badge.svg)](https://github.com/danielostrow/Whispr/actions/workflows/c-extensions-build.yml)
+[![Docker Build and Test](https://github.com/danielostrow/Whispr/actions/workflows/docker-build.yml/badge.svg)](https://github.com/danielostrow/Whispr/actions/workflows/docker-build.yml)
+
 In crowded and noisy environments, it's challenging to isolate and identify individual voices from an audio recording. **Whispr** is a tool designed to address this problem. It takes a pre-recorded audio file, performs signal analysis to extract and tag human speech, and uses clustering algorithms to separate distinct speakers.
 
 The end goal is to produce an interactive spatial map visualizing where and when speakers were talking. This can be valuable for journalists, security analysts, or researchers working with surveillance audio, interview transcriptions, and event recordings. This project uses a combination of modern signal processing, machine learning, and a web-based UI to provide an intuitive way to explore complex audio scenes.
@@ -12,25 +17,30 @@ The end goal is to produce an interactive spatial map visualizing where and when
 - **Spatial Localization**: Estimates the location of each speaker (placeholder implementation).
 - **Interactive UI**: A [Dash](https://plotly.com/dash/) application to visualize speaker locations and play back their audio.
 - **High-Performance C Extensions**: Optional optimized implementations of critical DSP and ML functions for improved performance.
+- **Docker Support**: Run the entire application in a containerized environment without local setup.
+- **CI/CD Workflows**: Automated testing and validation across multiple platforms.
 
 ## Project Structure
 
 ```
 Whispr/
-├── .venv/                # Python virtual environment
-├── output/               # Default directory for output files
-├── whispr/               # Main Python package
-│   ├── c_ext/            # C extensions for optimized performance
-│   ├── dsp/              # Digital Signal Processing modules
-│   ├── io/               # Input/Output handling
-│   ├── ml/               # Machine Learning models (VAD, clustering, separation)
-│   └── ui/               # User Interface (Dash app)
-├── .flake8               # Flake8 configuration
-├── pyproject.toml        # Black configuration
-├── README.md             # This file
-├── requirements-dev.txt  # Development dependencies
-├── requirements.txt      # Project dependencies
-└── run.sh                # Main execution script
+├── .github/             # GitHub Actions workflows for CI/CD
+├── .venv/               # Python virtual environment
+├── output/              # Default directory for output files
+├── whispr/              # Main Python package
+│   ├── c_ext/           # C extensions for optimized performance
+│   ├── dsp/             # Digital Signal Processing modules
+│   ├── io/              # Input/Output handling
+│   ├── ml/              # Machine Learning models (VAD, clustering, separation)
+│   └── ui/              # User Interface (Dash app)
+├── .flake8              # Flake8 configuration
+├── CHANGELOG.md         # Version history and changes
+├── Dockerfile           # Docker container definition
+├── pyproject.toml       # Black configuration
+├── README.md            # This file
+├── requirements-dev.txt # Development dependencies
+├── requirements.txt     # Project dependencies
+└── run.sh               # Main execution script
 ```
 
 ## Getting Started
@@ -47,6 +57,8 @@ Whispr/
   - For OpenMP support on macOS: `brew install libomp`
 
 ### Installation
+
+#### Option 1: Local Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -73,7 +85,22 @@ Whispr/
     cd ../..
     ```
 
+#### Option 2: Docker Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/danielostrow/Whispr.git
+   cd Whispr
+   ```
+
+2. **Build and run with Docker:**
+   ```bash
+   docker build -t whispr .
+   ```
+
 ## How to Run
+
+### Using the run.sh Script
 
 The easiest way to run the project is with the `run.sh` script. It automates code formatting, pipeline execution, and UI startup.
 
@@ -83,6 +110,12 @@ The easiest way to run the project is with the `run.sh` script. It automates cod
 ./run.sh /path/to/your/audio.wav
 ```
 
+**Using Docker with run.sh:**
+
+```bash
+./run.sh -d /path/to/your/audio.wav
+```
+
 The script will:
 1.  Format the code with `isort` and `black`.
 2.  Run the processing pipeline on your audio file.
@@ -90,6 +123,30 @@ The script will:
 4.  Launch the interactive Dash UI.
 
 Open your web browser to **http://127.0.0.1:8050** to see the speaker map. Click on a speaker to hear their isolated audio.
+
+### Manual Pipeline and UI Execution
+
+If you prefer to run the steps manually:
+
+1.  **Run the processing pipeline:**
+    ```bash
+    python3 whispr/pipeline.py /path/to/your/audio.wav
+    ```
+
+2.  **Launch the User Interface:**
+    ```bash
+    python3 whispr/ui/app.py output/metadata.json
+    ```
+
+### Using Docker Directly
+
+```bash
+# Process an audio file
+docker run --rm -v /path/to/your/audio.wav:/app/input/audio.wav -v $(pwd)/output:/app/output whispr:latest /app/input/audio.wav --output-dir /app/output
+
+# Launch UI (on local system)
+python whispr/ui/app.py output/metadata.json
+```
 
 ---
 
@@ -110,19 +167,15 @@ Build the C extensions following the installation instructions above. The Python
 
 We welcome contributions! Please see the "Getting Started" instructions for setup.
 
-### Manual Pipeline and UI Execution
+### Continuous Integration
 
-If you prefer to run the steps manually:
+This project uses GitHub Actions for continuous integration and testing:
 
-1.  **Run the processing pipeline:**
-    ```bash
-    python3 whispr/pipeline.py /path/to/your/audio.wav
-    ```
-
-2.  **Launch the User Interface:**
-    ```bash
-    python3 whispr/ui/app.py output/metadata.json
-    ```
+- **Python Tests**: Runs unit tests on multiple platforms and Python versions
+- **Python Lint**: Enforces code quality with flake8, black, and isort
+- **C Extensions Build**: Tests C extensions across platforms
+- **Integration Tests**: Tests the full pipeline with sample audio
+- **Docker Build**: Ensures the Docker container builds and works correctly
 
 ### Coding Style
 

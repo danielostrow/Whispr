@@ -6,6 +6,7 @@ AUDIO_FILE=$1
 OUTPUT_DIR="output"
 VENV_DIR=".venv"
 FORCE_REBUILD=""
+USE_DOCKER=""
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
@@ -22,6 +23,10 @@ while [[ $# -gt 0 ]]; do
             AUDIO_FILE="$2"
             shift 2
             ;;
+        -d|--docker)
+            USE_DOCKER="yes"
+            shift
+            ;;
         -h|--help)
             echo "Usage: ./run.sh [OPTIONS] <path_to_audio_file>"
             echo ""
@@ -29,9 +34,11 @@ while [[ $# -gt 0 ]]; do
             echo "  -o, --output-dir DIR    Set custom output directory (default: output)"
             echo "  -r, --rebuild           Force rebuild of C extensions"
             echo "  -f, --file FILE         Specify audio file (alternative to positional arg)"
+            echo "  -d, --docker            Use Docker container instead of local environment"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "Example: ./run.sh -r -o custom_output audio.wav"
+            echo "Example with Docker: ./run.sh -d -f audio.wav"
             exit 0
             ;;
         *)
@@ -44,17 +51,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# --- OS Detection ---
-VENV_ACTIVATE_PATH=""
-if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
-    VENV_ACTIVATE_PATH="$VENV_DIR/bin/activate"
-elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    VENV_ACTIVATE_PATH="$VENV_DIR/Scripts/activate"
-else
-    echo "⚠️ Unsupported OS: $OSTYPE. Cannot determine venv activation script."
-    exit 1
-fi
-
 # --- Validation ---
 if [ -z "$AUDIO_FILE" ]; then
     echo "⚠️ Error: No audio file provided."
@@ -65,6 +61,59 @@ fi
 
 if [ ! -f "$AUDIO_FILE" ]; then
     echo "⚠️ Error: Audio file not found at '$AUDIO_FILE'"
+    exit 1
+fi
+
+# --- Ensure Output Directory Exists ---
+mkdir -p "$OUTPUT_DIR"
+echo "📁 Output directory: $OUTPUT_DIR"
+
+# --- Docker Execution Path ---
+if [[ "$USE_DOCKER" == "yes" ]]; then
+    echo "🐳 Using Docker to run Whispr"
+    
+    # Check if Docker is available
+    if ! command -v docker &> /dev/null; then
+        echo "❌ Docker is not installed or not in PATH."
+        echo "Please install Docker or run without the --docker flag."
+        exit 1
+    fi
+    
+    # Build the Docker image if needed
+    echo "🔨 Building Docker image..."
+    docker build -t whispr:latest .
+    
+    # Get absolute paths for mounting
+    AUDIO_FILE_ABS=$(realpath "$AUDIO_FILE")
+    OUTPUT_DIR_ABS=$(realpath "$OUTPUT_DIR")
+    
+    echo "🚀 Running Whispr in Docker container..."
+    docker run --rm -v "$AUDIO_FILE_ABS:/app/input/$(basename "$AUDIO_FILE")" \
+               -v "$OUTPUT_DIR_ABS:/app/output" \
+               whispr:latest "/app/input/$(basename "$AUDIO_FILE")" --output-dir /app/output
+    
+    echo "✅ Processing complete. Results saved to $OUTPUT_DIR"
+    
+    # Launch UI if we're on a system with a display
+    if [[ -n "$DISPLAY" || "$OSTYPE" == "darwin"* ]]; then
+        echo "📊 Launching UI..."
+        python whispr/ui/app.py "$OUTPUT_DIR/metadata.json"
+    else
+        echo "⚠️ No display detected. UI not launched."
+        echo "To view results, run: python whispr/ui/app.py $OUTPUT_DIR/metadata.json"
+    fi
+    
+    exit 0
+fi
+
+# --- OS Detection ---
+VENV_ACTIVATE_PATH=""
+if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
+    VENV_ACTIVATE_PATH="$VENV_DIR/bin/activate"
+elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    VENV_ACTIVATE_PATH="$VENV_DIR/Scripts/activate"
+else
+    echo "⚠️ Unsupported OS: $OSTYPE. Cannot determine venv activation script."
     exit 1
 fi
 
@@ -85,10 +134,6 @@ else
     source "$VENV_ACTIVATE_PATH"
     echo "✅ Virtual environment activated."
 fi
-
-# --- Ensure Output Directory Exists ---
-mkdir -p "$OUTPUT_DIR"
-echo "📁 Output directory: $OUTPUT_DIR"
 
 # --- Build C Extensions ---
 EXTENSIONS_BUILD_SCRIPT="whispr/c_ext/build_extensions.sh"

@@ -1,0 +1,59 @@
+name: Changelog Checker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ "main" ]
+    paths-ignore:
+      - 'CHANGELOG.md'
+      - 'README.md'
+      - '.github/**'
+      - 'docs/**'
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    # Skip drafts
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check if CHANGELOG.md exists
+        id: check-changelog-exists
+        run: |
+          if [ -f "CHANGELOG.md" ]; then
+            echo "changelog_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "changelog_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check if CHANGELOG.md was modified
+        id: check-changelog-modified
+        if: steps.check-changelog-exists.outputs.changelog_exists == 'true'
+        run: |
+          # Get the PR base branch and current branch
+          BASE_BRANCH=${{ github.event.pull_request.base.ref }}
+          
+          # Check if CHANGELOG.md has been modified in this PR
+          if git diff --name-only origin/$BASE_BRANCH...HEAD | grep -q "CHANGELOG.md"; then
+            echo "changelog_modified=true" >> $GITHUB_OUTPUT
+          else
+            echo "changelog_modified=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Comment on PR if CHANGELOG.md was not updated
+        if: (steps.check-changelog-exists.outputs.changelog_exists == 'true' && steps.check-changelog-modified.outputs.changelog_modified == 'false')
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ It looks like you didn\'t update the CHANGELOG.md file in this PR. Consider adding a changelog entry to help users understand what changed in this PR.'
+            }) 
