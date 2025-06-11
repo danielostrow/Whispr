@@ -21,5 +21,7 @@ def frame_signal(signal: np.ndarray, frame_length: int, hop_length: int) -> np.n
     num_frames = 1 + int((len(signal) - frame_length) / hop_length)
     shape = (num_frames, frame_length)
     strides = (hop_length * signal.strides[0], signal.strides[0])
-    frames = np.lib.stride_tricks.as_strided(signal, shape=shape, strides=strides).copy()
-    return frames 
+    frames = np.lib.stride_tricks.as_strided(
+        signal, shape=shape, strides=strides
+    ).copy()
+    return frames

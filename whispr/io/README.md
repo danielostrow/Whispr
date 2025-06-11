@@ -1,8 +1,8 @@
 # Input/Output (I/O)
 
-This directory handles data loading and saving.
+This module handles reading and writing files.
 
 ## Modules
 
-- **`loader.py`**: Contains functions for loading data, such as audio files or pre-processed feature files.
-- **`writer.py`**: Contains functions for writing data, such as saving processed features or model outputs. 
+- `loader.py`: Loads audio files from disk and converts them to a standard format for the pipeline.
+- `writer.py`: Writes speaker-separated audio clips and metadata to the output directory. 

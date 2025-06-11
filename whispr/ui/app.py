@@ -1,68 +1,127 @@
-from pathlib import Path
+import argparse
 import json
+import shutil
+from pathlib import Path
+from typing import Dict, Any
 
 import dash
-from dash import dcc, html, Input, Output
+import pandas as pd
 import plotly.express as px
+from dash import Dash, Input, Output, dcc, html
 
 ASSETS_URL_PATH = "/assets/"
 
 
-def build_app(metadata_path: Path):
-    meta = json.loads(Path(metadata_path).read_text())
-    df = {
-        "id": [spk["id"] for spk in meta["speakers"]],
-        "x": [spk["location"][0] for spk in meta["speakers"]],
-        "y": [spk["location"][1] for spk in meta["speakers"]],
-        "audio": [spk["audio_file"] for spk in meta["speakers"]],
-    }
+def prepare_data(metadata: Dict[str, Any]) -> pd.DataFrame:
+    """Extract speaker data from metadata and return a Pandas DataFrame."""
+    records = []
+    for spk in metadata["speakers"]:
+        records.append(
+            {
+                "id": spk["id"],
+                "x": spk["location"][0],
+                "y": spk["location"][1],
+                "audio_file": spk["audio_file"],
+            }
+        )
+    return pd.DataFrame(records)
 
-    fig = px.scatter(df, x="x", y="y", text="id", size_max=15)
-    fig.update_traces(marker=dict(size=20))
-    fig.update_layout(clickmode="event+select", title="Whispr Speaker Map")
 
-    app = dash.Dash(__name__)
-    app.layout = html.Div(
-        [
-            dcc.Graph(id="graph", figure=fig, style={"height": "70vh"}),
-            html.Audio(id="player", controls=True, src=""),
-        ]
+def create_speaker_map(df: pd.DataFrame) -> px.scatter:
+    """Create a Plotly scatter plot of speaker locations."""
+    fig = px.scatter(
+        df,
+        x="x",
+        y="y",
+        text="id",
+        hover_name="id",
+        hover_data={"x": False, "y": False, "audio_file": True},
+        size_max=20,
+    )
+    fig.update_traces(marker=dict(size=25, symbol="circle"))
+    fig.update_layout(
+        clickmode="event+select",
+        title="Whispr Speaker Map",
+        xaxis_title="X Coordinate",
+        yaxis_title="Y Coordinate",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white"),
+    )
+    return fig
+
+
+def create_layout(fig: px.scatter) -> html.Div:
+    """Create the Dash application layout."""
+    return html.Div(
+        className="container",
+        children=[
+            html.H1("Whispr Speaker Diarization"),
+            dcc.Graph(
+                id="speaker-map",
+                figure=fig,
+                className="speaker-map",
+                config={"displayModeBar": False},
+            ),
+            html.Audio(id="audio-player", controls=True, src=""),
+        ],
     )
 
-    @app.callback(Output("player", "src"), Input("graph", "clickData"))
+
+def build_app(metadata_path: Path) -> Dash:
+    """Build the full Dash application."""
+    metadata = json.loads(metadata_path.read_text())
+    df = prepare_data(metadata)
+    fig = create_speaker_map(df)
+
+    app = Dash(__name__, assets_url_path=ASSETS_URL_PATH)
+    app.layout = create_layout(fig)
+
+    @app.callback(
+        Output("audio-player", "src"),
+        Input("speaker-map", "clickData"),
+    )
     def play_audio(clickData):
         if clickData and "points" in clickData:
-            point = clickData["points"][0]
-            idx = point["pointIndex"]
-            file_rel = df["audio"][idx]
-            # Dash serves assets under /assets
-            return f"{ASSETS_URL_PATH}{file_rel}"
+            point_data = clickData["points"][0]
+            audio_file = point_data["customdata"][0]
+            return f"{ASSETS_URL_PATH}{audio_file}"
         return dash.no_update
 
     return app
 
 
-if __name__ == "__main__":
-    import argparse
-    from ..config import Config
-
-    parser = argparse.ArgumentParser(description="Launch Whispr Dash UI")
-    parser.add_argument("metadata", type=Path, help="Path to metadata.json")
-    args = parser.parse_args()
-
-    meta_path = Path(args.metadata)
-    if not meta_path.exists():
-        raise FileNotFoundError(meta_path)
-
-    # Copy audio files to assets directory for Dash static serving
+def prepare_assets(metadata_path: Path):
+    """Copy audio files into the assets directory for serving."""
     assets_dir = Path(__file__).resolve().parent / "assets"
     assets_dir.mkdir(exist_ok=True)
-    meta = json.loads(meta_path.read_text())
-    for spk in meta["speakers"]:
-        src = meta_path.parent / spk["audio_file"]
-        dst = assets_dir / spk["audio_file"]
-        if not dst.exists():
-            dst.write_bytes(src.read_bytes())
+    metadata = json.loads(metadata_path.read_text())
 
-    app = build_app(meta_path)
-    app.run(debug=True) 
+    for spk in metadata["speakers"]:
+        src_path = metadata_path.parent / spk["audio_file"]
+        dst_path = assets_dir / spk["audio_file"]
+        if not dst_path.exists():
+            shutil.copy(src_path, dst_path)
+    print(f"Copied {len(metadata['speakers'])} audio files to {assets_dir}")
+
+
+def main():
+    """Parse arguments and run the Dash app."""
+    parser = argparse.ArgumentParser(description="Launch the Whispr Dash UI.")
+    parser.add_argument(
+        "metadata",
+        type=Path,
+        help="Path to the metadata.json file generated by the pipeline.",
+    )
+    args = parser.parse_args()
+
+    if not args.metadata.exists():
+        raise FileNotFoundError(f"Metadata file not found: {args.metadata}")
+
+    prepare_assets(args.metadata)
+    app = build_app(args.metadata)
+    app.run(debug=True)
+
+
+if __name__ == "__main__":
+    main()

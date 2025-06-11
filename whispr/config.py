@@ -9,4 +9,4 @@ class Config:
     hop_length_ms: float = 10.0
     vad_energy_threshold: float = 0.01  # relative energy
     min_speech_duration_s: float = 0.3  # merge small segments
-    output_dir: Path = Path("output") 
+    output_dir: Path = Path("output")

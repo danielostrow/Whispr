@@ -1,8 +1,8 @@
 # User Interface (UI)
 
-This directory contains the user interface for the application, built with Dash.
+This module contains the web-based user interface for visualizing the pipeline's output.
 
-## Files
+## Modules
 
-- **`app.py`**: The main Dash application file. It defines the layout and callbacks for the UI.
-- **`assets/`**: A directory for static assets like CSS, JavaScript, and images. 
+- `app.py`: A [Dash](https://plotly.com/dash/) application that creates an interactive speaker map. It allows users to see the estimated location of each speaker and click to play their isolated audio.
+- `assets/`: Directory for static files, such as `style.css`. 

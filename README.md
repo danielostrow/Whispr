@@ -1,28 +1,46 @@
-# Whispr
+# Whispr 🎙️
 
-In crowded and noisy environments, it's challenging to isolate and identify individual voices from an audio recording. This project addresses that problem by developing Whispr, a tool that takes pre-recorded audio files and performs signal analysis to extract and tag human speech from background noise.
+In crowded and noisy environments, it's challenging to isolate and identify individual voices from an audio recording. **Whispr** is a tool designed to address this problem. It takes a pre-recorded audio file, performs signal analysis to extract and tag human speech, and uses clustering algorithms to separate distinct speakers.
 
-## How it Works
+The end goal is to produce an interactive spatial map visualizing where and when speakers were talking. This can be valuable for journalists, security analysts, or researchers working with surveillance audio, interview transcriptions, and event recordings. This project uses a combination of modern signal processing, machine learning, and a web-based UI to provide an intuitive way to explore complex audio scenes.
 
-Using GNU Radio for preprocessing and Fast Fourier Transform for frequency analysis, the program identifies voice patterns and applies basic clustering algorithms to separate and profile distinct speakers. The end goal is to produce a spatial map of where, when, and what the speakers were saying in the space from the audio files alone.
+## Features
 
-## Potential Applications
-
-This tool could be valuable for journalists, security analysts, or researchers working with surveillance audio, interview transcriptions, and event recordings.
+- **Voice Activity Detection (VAD)**: Identifies segments of speech in an audio file.
+- **Speaker Clustering**: Groups speech segments by speaker using MFCC features and clustering.
+- **Source Separation**: Attempts to isolate individual speaker audio, even in cases of overlap, using [Asteroid](https://github.com/asteroid-team/asteroid).
+- **Spatial Localization**: Estimates the location of each speaker (placeholder implementation).
+- **Interactive UI**: A [Dash](https://plotly.com/dash/) application to visualize speaker locations and play back their audio.
 
 ## Project Structure
 
-- `whispr/`: Main Python package
-  - [`dsp/`](whispr/dsp/README.md): Digital Signal Processing modules
-  - [`io/`](whispr/io/README.md): Input/Output modules
-  - [`ml/`](whispr/ml/README.md): Machine Learning modules
-  - [`ui/`](whispr/ui/README.md): User Interface modules
-- `output/`: Default directory for output files
-- `.venv/`: Python virtual environment
-- `requirements.txt`: Project dependencies
-
+```
+Whispr/
+├── .venv/                # Python virtual environment
+├── output/               # Default directory for output files
+├── whispr/               # Main Python package
+│   ├── dsp/              # Digital Signal Processing modules
+│   ├── io/               # Input/Output handling
+│   ├── ml/               # Machine Learning models (VAD, clustering, separation)
+│   └── ui/               # User Interface (Dash app)
+├── .flake8               # Flake8 configuration
+├── pyproject.toml        # Black configuration
+├── README.md             # This file
+├── requirements-dev.txt  # Development dependencies
+├── requirements.txt      # Project dependencies
+└── run.sh                # Main execution script
+```
 
 ## Getting Started
+
+### Prerequisites
+
+- Python 3.8+
+- `ffmpeg` (for handling various audio formats)
+  - On macOS (via Homebrew): `brew install ffmpeg`
+  - On Debian/Ubuntu: `sudo apt update && sudo apt install ffmpeg`
+
+### Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -39,48 +57,47 @@ This tool could be valuable for journalists, security analysts, or researchers w
 3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
+    pip install -r requirements-dev.txt
     ```
 
 ## How to Run
 
-The project has two main parts: a processing pipeline that analyzes an audio file and a web-based UI to explore the results.
+The easiest way to run the project is with the `run.sh` script. It automates code formatting, pipeline execution, and UI startup.
+
+**Provide an audio file (e.g., WAV, MP3) as an argument:**
+
+```bash
+./run.sh /path/to/your/audio.wav
+```
+
+The script will:
+1.  Format the code with `isort` and `black`.
+2.  Run the processing pipeline on your audio file.
+3.  Save the results (audio clips and `metadata.json`) to the `output/` directory.
+4.  Launch the interactive Dash UI.
+
+Open your web browser to **http://127.0.0.1:8050** to see the speaker map. Click on a speaker to hear their isolated audio.
+
+---
+
+## Development
+
+We welcome contributions! Please see the "Getting Started" instructions for setup.
+
+### Manual Pipeline and UI Execution
+
+If you prefer to run the steps manually:
 
 1.  **Run the processing pipeline:**
-
-    You need an audio file (e.g., WAV, MP3) with speech to process. Place it somewhere accessible. Then, run the pipeline:
-
     ```bash
-    python -m whispr.pipeline path/to/your/audio.wav
+    python3 whispr/pipeline.py /path/to/your/audio.wav
     ```
-
-    This will create an `output/` directory containing the processed audio segments and a `metadata.json` file.
 
 2.  **Launch the User Interface:**
-
-    Once the pipeline has finished, you can start the Dash UI to visualize the speaker locations:
-
     ```bash
-    python -m whispr.ui.app output/metadata.json
+    python3 whispr/ui/app.py output/metadata.json
     ```
-
-    Open your web browser and navigate to `http://127.0.0.1:8050/` to see the speaker map. Click on a speaker to hear their isolated audio.
-
-## Development and Contribution
-
-We welcome contributions to Whispr! If you'd like to help improve the tool, please follow these guidelines.
-
-### Development Setup
-
-Follow the "Getting Started" instructions to set up your environment.
-
-### Contribution Workflow
-
-1.  Fork the repository on GitHub.
-2.  Create a new branch for your feature or bug fix: `git checkout -b feature/my-new-feature` or `bugfix/issue-number`.
-3.  Make your changes and commit them with clear, descriptive messages.
-4.  Push your branch to your fork: `git push origin feature/my-new-feature`.
-5.  Create a Pull Request from your fork to the main Whispr repository.
 
 ### Coding Style
 
-This project uses standard Python style guides (PEP 8). We recommend using formatters and linters like `black` and `flake8` to maintain code quality. 
+This project uses `black` for formatting and `flake8` for linting. Configuration is in `pyproject.toml` and `.flake8`. The `run.sh` script automatically applies formatting. 

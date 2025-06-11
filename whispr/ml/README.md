@@ -1,9 +1,9 @@
 # Machine Learning (ML)
 
-This directory contains the core machine learning models for the project.
+This module contains the core machine learning logic for speaker diarization.
 
 ## Modules
 
-- **`clustering.py`**: Implements clustering algorithms to group similar audio segments.
-- **`separation.py`**: Contains models for sound source separation, such as separating speech from background noise.
-- **`vad.py`**: Implements a Voice Activity Detection (VAD) model to identify the presence of speech in an audio signal. 
+- `vad.py`: Performs Voice Activity Detection (VAD) to find speech segments.
+- `clustering.py`: Clusters speech segments into distinct speakers.
+- `separation.py`: Separates audio sources to isolate individual speakers. It uses `asteroid` if available for superior performance with overlapping speech. 

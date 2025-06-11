@@ -1,0 +1,51 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+    margin: 0;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 960px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 2rem;
+}
+
+.speaker-map {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#audio-player {
+    width: 100%;
+    margin-top: 2rem;
+    background-color: #333;
+    border-radius: 5px;
+}
+
+#audio-player::-webkit-media-controls-panel {
+    background-color: #333;
+}
+
+#audio-player::-webkit-media-controls-play-button,
+#audio-player::-webkit-media-controls-volume-slider,
+#audio-player::-webkit-media-controls-mute-button,
+#audio-player::-webkit-media-controls-timeline,
+#audio-player::-webkit-media-controls-current-time-display,
+#audio-player::-webkit-media-controls-time-remaining-display {
+    filter: invert(1);
+} 

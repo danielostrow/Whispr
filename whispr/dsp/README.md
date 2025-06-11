@@ -1,9 +1,9 @@
 # Digital Signal Processing (DSP)
 
-This directory contains modules for processing audio signals.
+This module contains functions for signal processing tasks, such as feature extraction and spatial audio analysis.
 
 ## Modules
 
-- **`features.py`**: Extracts features from audio signals, such as MFCCs, spectral contrast, and chroma features.
-- **`framing.py`**: Handles the framing of audio signals into smaller chunks for analysis.
-- **`spatial.py`**: Contains functions for spatial audio processing, like beamforming and sound source localization. 
+- `features.py`: Extracts acoustic features like MFCCs and energy.
+- `spatial.py`: Estimates spatial cues like Interaural Time Difference (ITD) and Interaural Level Difference (ILD).
+- `framing.py`: Logic for windowing signals into frames. 

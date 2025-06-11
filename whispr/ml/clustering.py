@@ -26,4 +26,4 @@ def cluster_speakers(mfcc: np.ndarray, segments: List[tuple]) -> List[int]:
     # Agglomerative clustering with distance threshold to let algorithm pick #clusters
     clustering = AgglomerativeClustering(distance_threshold=8.0, n_clusters=None)
     labels = clustering.fit_predict(feats).tolist()
-    return labels 
+    return labels

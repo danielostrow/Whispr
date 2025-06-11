@@ -10,14 +10,12 @@ from ..config import Config
 def write_speaker_clips(speakers: List[dict], cfg: Config) -> Path:
     """Write wav files for each speaker and produce metadata JSON.
 
-    Parameters
-    ----------
-    speakers : list of dict
-        Each dict has keys: id, signal (np.ndarray), sr, segments (list of (start, end)).
+    Args:
+        speakers: Each dict has keys: id, signal (np.ndarray), sr,
+            segments (list of (start, end)).
+        cfg: The configuration object.
 
-    Returns
-    -------
-    Path
+    Returns:
         Path to metadata JSON file.
     """
     out_root = cfg.output_dir
@@ -36,7 +34,8 @@ def write_speaker_clips(speakers: List[dict], cfg: Config) -> Path:
                 "location": spk.get("location", [0.0, 0.0]),
                 "audio_file": wav_path.name,
                 "segments": [
-                    {"start": float(s), "end": float(e)} for s, e in spk.get("segments", [])
+                    {"start": float(s), "end": float(e)}
+                    for s, e in spk.get("segments", [])
                 ],
             }
         )
@@ -45,4 +44,4 @@ def write_speaker_clips(speakers: List[dict], cfg: Config) -> Path:
     with meta_path.open("w") as f:
         json.dump(meta, f, indent=2)
 
-    return meta_path 
+    return meta_path

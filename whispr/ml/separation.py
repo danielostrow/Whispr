@@ -1,8 +1,10 @@
-from typing import List, Dict, Optional
+import logging
+from typing import Dict, List, Optional
+
+import numpy as np
 
 # Note: we rely solely on segment clustering for speaker separation
 
-import numpy as np
 
 # Try to lazily import torch and asteroid; code will fallback if unavailable
 try:
@@ -14,8 +16,26 @@ except (ImportError, OSError):
     _ASTEROID_AVAILABLE = False
 
 
-def _dummy_separate(signal: np.ndarray, sr: int, segments: List[tuple], labels: List[int]) -> List[Dict]:
-    """Fallback segmentation-based separation (no overlap handling)."""
+log = logging.getLogger(__name__)
+
+
+def _separate_by_segmentation(
+    signal: np.ndarray, sr: int, segments: List[tuple], labels: List[int]
+) -> List[Dict]:
+    """Separate speakers by concatenating their assigned segments.
+
+    This is a simpler fallback method used when advanced separation (like
+    Asteroid) is unavailable or fails. It does not handle overlapping speech.
+
+    Args:
+        signal: The input mono audio signal.
+        sr: The sample rate of the signal.
+        segments: List of (start_frame, end_frame) tuples from VAD.
+        labels: List of integer speaker labels corresponding to each segment.
+
+    Returns:
+        A list of speaker dictionaries, each with their concatenated audio.
+    """
     # Collect frame index segments per speaker
     speakers: Dict[str, List[tuple]] = {}
     for (start_frame, end_frame), label in zip(segments, labels):
@@ -43,61 +63,67 @@ def _dummy_separate(signal: np.ndarray, sr: int, segments: List[tuple], labels: 
             continue
 
         concatenated = np.concatenate(audio_slices)
-        out.append({
-            "id": spk,
-            "signal": concatenated,
-            "sr": sr,
-            "segments": time_segments,
-        })
+        out.append(
+            {
+                "id": spk,
+                "signal": concatenated,
+                "sr": sr,
+                "segments": time_segments,
+            }
+        )
 
     return out
 
 
-def _asteroid_separate(signal: np.ndarray, sr: int, max_speakers: int = 2) -> Optional[List[Dict]]:
-    """Use Asteroid Conv-TasNet to perform blind speech separation.
+def _asteroid_separate(
+    signal: np.ndarray, sr: int, max_speakers: int = 2
+) -> Optional[List[Dict]]:
+    """Use Asteroid's Conv-TasNet to perform blind speech separation.
 
-    Parameters
-    ----------
-    signal : np.ndarray
-        Mono 1-D waveform at `sr` Hz.
-    sr : int
-        Sampling rate (must match the model, 16 kHz for most pre-trained weights).
-    max_speakers : int, optional
-        Number of speakers the model will try to extract (default 2).
+    This function attempts to use a pre-trained source separation model to
+    isolate speakers. It requires `torch` and `asteroid` to be installed.
+    The model is downloaded from HuggingFace Hub on first run.
 
-    Returns
-    -------
-    list[dict] or None
-        Separated tracks or None if Asteroid/torch unavailable.
+    Args:
+        signal: Mono 1-D waveform at `sr` Hz.
+        sr: Sampling rate (must match the model, 16 kHz for most weights).
+        max_speakers: Number of speakers the model will try to extract.
+
+    Returns:
+        A list of separated speaker tracks, or None if separation fails or
+        dependencies are not met.
     """
     if not _ASTEROID_AVAILABLE:
+        log.warning(
+            "Asteroid not available. Skipping blind source separation. "
+            "Install with: pip install asteroid"
+        )
+        return None
+
+    if sr != 16_000:
+        log.warning(
+            f"Asteroid model requires 16kHz sample rate, but got {sr}. "
+            "Skipping separation."
+        )
+        return None
+
+    # Load pre-trained model (2-speaker LibriMix)
+    try:
+        model = ConvTasNet.from_pretrained("mpariente/ConvTasNet_LibriMix_sepclean_16k")
+    except (RuntimeError, OSError) as e:
+        log.error(f"Failed to load Asteroid model: {e}. Cannot perform separation.")
         return None
 
     # Asteroid expects float32 tensor (batch, time)
-    import torch
-    from asteroid.models import ConvTasNet
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # Load pre-trained model (2-speaker LibriMix). Works reasonably for generic speech.
-    try:
-        model = ConvTasNet.from_pretrained("mpariente/ConvTasNet_LibriMix_sepclean_16k")
-    except RuntimeError:
-        # Fallback to local random-init if HF download fails
-        return None
-
     model.to(device).eval()
-
-    if sr != 16_000:
-        # Ideally resample; for now, return None to fallback
-        return None
 
     wav_tensor = torch.tensor(signal, dtype=torch.float32, device=device).unsqueeze(0)
 
     with torch.no_grad():
-        est_sources = model(wav_tensor)  # (batch, n_src, time)
+        est_sources = model(wav_tensor)
 
-    est_sources = est_sources.squeeze(0).cpu().numpy()  # (n_src, time)
+    est_sources = est_sources.squeeze(0).cpu().numpy()
 
     tracks = []
     for idx in range(min(max_speakers, est_sources.shape[0])):
@@ -111,24 +137,44 @@ def _asteroid_separate(signal: np.ndarray, sr: int, max_speakers: int = 2) -> Op
             }
         )
 
+    log.info(f"Successfully separated {len(tracks)} sources using Asteroid.")
     return tracks
 
 
-def separate(signal: np.ndarray, sr: int, segments: List[tuple], labels: List[int]) -> List[Dict]:
-    """Speaker-centric separation.
+def separate(
+    signal: np.ndarray, sr: int, segments: List[tuple], labels: List[int]
+) -> List[Dict]:
+    """Separate audio into per-speaker tracks.
 
-    The project's goal is to isolate *speakers*.
+    This function acts as a dispatcher for speaker separation. It first
+    attempts to use a sophisticated blind source separation model (Asteroid)
+    if the number of speakers is low (<= 2) and the necessary libraries are
+    installed.
 
-    If Asteroid (Conv-TasNet) is available, we attempt blind speech separation to
-    handle overlapping voices.  Otherwise, we revert to concatenating VAD
-    segments per clustered speaker.
+    If the conditions for Asteroid are not met or it fails, it will fall back
+    to a simpler method of concatenating VAD segments based on clustering
+    results.
+
+    Args:
+        signal: The input mono audio signal.
+        sr: The sample rate of the signal.
+        segments: List of (start_frame, end_frame) tuples from VAD.
+        labels: List of integer speaker labels corresponding to each segment.
+
+    Returns:
+        A list of speaker dictionaries, each containing the separated signal.
     """
+    num_speakers = len(set(labels))
+    log.info(f"Attempting to separate {num_speakers} speakers.")
 
     # Use Asteroid only for simple 2-speaker mixtures; otherwise clustering-based
-    if len(set(labels)) <= 2:
-        tracks = _asteroid_separate(signal, sr, max_speakers=len(set(labels)))
+    if num_speakers > 0 and num_speakers <= 2:
+        tracks = _asteroid_separate(signal, sr, max_speakers=num_speakers)
         if tracks is not None:
             return tracks
+        else:
+            log.warning("Asteroid separation failed, falling back to segmentation.")
 
     # Fallback / multi-speaker case
-    return _dummy_separate(signal, sr, segments, labels) 
+    log.info("Using segmentation-based separation.")
+    return _separate_by_segmentation(signal, sr, segments, labels)

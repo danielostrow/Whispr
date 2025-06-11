@@ -21,7 +21,7 @@ def extract_features(signal: np.ndarray, cfg: Config) -> Tuple[np.ndarray, np.nd
     frames = frame_signal(signal, frame_len, hop_len)
     windowed = frames * np.hanning(frame_len)
 
-    energies = np.sum(windowed ** 2, axis=1)
+    energies = np.sum(windowed**2, axis=1)
 
     # Compute MFCCs on original continuous signal for convenience
     mfcc = librosa.feature.mfcc(
@@ -34,4 +34,4 @@ def extract_features(signal: np.ndarray, cfg: Config) -> Tuple[np.ndarray, np.nd
 
     # Align energy length to mfcc length in case of off-by-one
     min_len = min(len(energies), len(mfcc))
-    return mfcc[:min_len], energies[:min_len] 
+    return mfcc[:min_len], energies[:min_len]

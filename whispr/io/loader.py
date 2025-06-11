@@ -38,4 +38,4 @@ def load_audio(path: Path, cfg: Config) -> Tuple[np.ndarray, int]:
     if peak > 0:
         mono = mono / peak
 
-    return mono.astype(np.float32), sr 
+    return mono.astype(np.float32), sr

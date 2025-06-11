@@ -32,4 +32,4 @@ def simple_energy_vad(energies: np.ndarray, cfg: Config) -> List[Tuple[int, int]
     for beg, end in segments:
         if (end - beg + 1) >= min_frames:
             refined.append((beg, end))
-    return refined 
+    return refined

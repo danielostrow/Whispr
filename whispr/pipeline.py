@@ -1,24 +1,40 @@
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
-
 from .config import Config
-from .io.loader import load_audio
 from .dsp.features import extract_features
-from .ml.vad import simple_energy_vad
+from .io.loader import load_audio
+from .io.writer import write_speaker_clips
+from .localization import assign_locations
 from .ml.clustering import cluster_speakers
 from .ml.separation import separate
-from .localization import assign_locations
-from .io.writer import write_speaker_clips
+from .ml.vad import simple_energy_vad
 
 
-def run_pipeline(audio_path: str, cfg: Optional[Config] = None) -> Path:
-    """Run Whispr pipeline on `audio_path` and return metadata JSON path."""
-    cfg = cfg or Config()
+def run_pipeline(audio_path: Path, cfg: Config) -> Path:
+    """Run Whispr pipeline on a single audio file.
 
+    This function orchestrates the entire speaker diarization process:
+    1. Loads audio
+    2. Extracts features (MFCCs, energy)
+    3. Performs Voice Activity Detection (VAD)
+    4. Clusters speech segments into speakers
+    5. Separates audio for each speaker
+    6. Assigns spatial locations (placeholder)
+    7. Writes speaker clips and metadata to disk.
+
+    Args:
+        audio_path: Path to the input audio file.
+        cfg: Configuration object.
+
+    Returns:
+        Path to the output metadata JSON file.
+
+    Raises:
+        RuntimeError: If no speech is detected in the audio.
+    """
     # 1. Load audio
-    mono, sr = load_audio(Path(audio_path), cfg)
+    mono, sr = load_audio(audio_path, cfg)
 
     # 2. Feature extraction
     mfcc, energies = extract_features(mono, cfg)
@@ -42,14 +58,27 @@ def run_pipeline(audio_path: str, cfg: Optional[Config] = None) -> Path:
     return meta_path
 
 
+def main():
+    """Parse CLI arguments and run the pipeline."""
+    parser = argparse.ArgumentParser(description="Run Whispr pipeline on an audio file.")
+    parser.add_argument("audio", type=Path, help="Path to input audio file (wav, mp3, etc.)")
+    parser.add_argument(
+        "--output-dir", type=Path, default=Path("output"), help="Directory to save results."
+    )
+    parser.add_argument(
+        "--sample-rate", type=int, default=16000, help="Target sample rate for processing."
+    )
+    args = parser.parse_args()
+
+    cfg = Config(
+        sample_rate=args.sample_rate,
+        output_dir=args.output_dir,
+    )
+    out_meta = run_pipeline(args.audio, cfg)
+    print(f"✅ Processing complete. Metadata saved to: {out_meta}")
+
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run Whispr pipeline on audio file")
-    parser.add_argument("audio", type=str, help="Path to audio (wav/mp3)")
-    parser.add_argument("--sr", type=int, default=16_000, help="Target sampling rate")
-    args = parser.parse_args()
-
-    cfg = Config(sample_rate=args.sr)
-    out_meta = run_pipeline(args.audio, cfg)
-    print(f"Processing complete. Metadata saved to: {out_meta}") 
+    main()
