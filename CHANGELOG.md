@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated run.sh to support Docker execution with -d/--docker flag
 - Restructured README.md to include Docker and CI information
+- Updated GitHub Actions workflows to use actions/upload-artifact@v4 (from deprecated v2)
+
+### Fixed
+- Fixed failing CI workflows that were using deprecated GitHub Actions
 
 ## [0.1.0] - 2025-06-11
 

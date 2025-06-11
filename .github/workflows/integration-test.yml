@@ -72,7 +72,7 @@ jobs:
         timeout 10s python whispr/ui/app.py output/metadata.json || code=$?; if [ $code -ne 124 -a $code -ne 0 ]; then exit $code; fi
     
     - name: Upload test artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: integration-test-output-${{ matrix.os }}
         path: output/ 
