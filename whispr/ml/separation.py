@@ -3,6 +3,12 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
+# Try to import C extensions
+try:
+    from ..c_ext import separate_by_segmentation_c, C_EXTENSIONS_AVAILABLE
+except ImportError:
+    C_EXTENSIONS_AVAILABLE = False
+
 # Note: we rely solely on segment clustering for speaker separation
 
 
@@ -36,6 +42,11 @@ def _separate_by_segmentation(
     Returns:
         A list of speaker dictionaries, each with their concatenated audio.
     """
+    # Use C implementation if available
+    if C_EXTENSIONS_AVAILABLE:
+        return separate_by_segmentation_c(signal, sr, segments, labels)
+    
+    # Fall back to Python implementation
     # Collect frame index segments per speaker
     speakers: Dict[str, List[tuple]] = {}
     for (start_frame, end_frame), label in zip(segments, labels):
