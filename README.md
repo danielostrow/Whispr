@@ -47,7 +47,7 @@ Whispr/
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - `ffmpeg` (for handling various audio formats)
   - On macOS (via Homebrew): `brew install ffmpeg`
   - On Debian/Ubuntu: `sudo apt update && sudo apt install ffmpeg`
