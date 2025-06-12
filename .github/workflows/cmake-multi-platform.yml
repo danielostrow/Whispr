@@ -47,16 +47,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Check if CMakeLists.txt exists
+    - name: Check for CMakeLists.txt
+      id: check_cmake
+      shell: bash
+      run: |
+        if [ -f "CMakeLists.txt" ]; then
+          echo "cmake_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "cmake_exists=false" >> $GITHUB_OUTPUT
+          echo "No CMakeLists.txt found in the repository. Skipping CMake build."
+        fi
+
     - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      if: steps.check_cmake.outputs.cmake_exists == 'true'
       id: strings
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      if: steps.check_cmake.outputs.cmake_exists == 'true'
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -65,10 +76,11 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      if: steps.check_cmake.outputs.cmake_exists == 'true'
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Test
+      if: steps.check_cmake.outputs.cmake_exists == 'true'
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail

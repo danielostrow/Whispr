@@ -177,6 +177,36 @@ This project uses GitHub Actions for continuous integration and testing:
 - **Integration Tests**: Tests the full pipeline with sample audio
 - **Docker Build**: Ensures the Docker container builds and works correctly
 
+### Automated Changelog
+
+The project includes an automated changelog update system that works when pull requests are merged to the main branch.
+
+#### Pull Request Title Format
+
+For automatic changelog updates to work properly, format your PR titles following these conventions:
+
+- **New features**: Start with `feat:` or include `feature` or `add` in the title
+  - Example: `feat: add speaker visualization feature`
+  - Will be categorized under: **Added**
+
+- **Bug fixes**: Start with `fix:` or include `bug` in the title
+  - Example: `fix: resolve audio playback issue in Firefox`
+  - Will be categorized under: **Fixed**
+
+- **Breaking changes/removals**: Include `deprecate`, `remove`, or `drop` in the title
+  - Example: `remove: drop support for Python 3.7`
+  - Will be categorized under: **Removed**
+
+- **Security fixes**: Include `security` in the title
+  - Example: `security: update vulnerable dependency`
+  - Will be categorized under: **Security**
+
+- **Other changes**: Any other title
+  - Example: `improve performance of clustering algorithm`
+  - Will be categorized under: **Changed**
+
+The PR number will be automatically appended to each changelog entry for reference.
+
 ### Coding Style
 
 This project uses `black` for formatting and `flake8` for linting. Configuration is in `pyproject.toml` and `.flake8`. The `run.sh` script automatically applies formatting. 

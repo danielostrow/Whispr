@@ -1,0 +1,124 @@
+name: Update Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract PR information
+        id: pr_info
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          
+          # Determine change type from PR labels or title
+          CHANGE_TYPE="Changed"
+          if [[ "$PR_TITLE" == *"feat"* || "$PR_TITLE" == *"feature"* || "$PR_TITLE" == *"add"* ]]; then
+            CHANGE_TYPE="Added"
+          elif [[ "$PR_TITLE" == *"fix"* || "$PR_TITLE" == *"bug"* ]]; then
+            CHANGE_TYPE="Fixed"
+          elif [[ "$PR_TITLE" == *"deprecate"* || "$PR_TITLE" == *"remove"* || "$PR_TITLE" == *"drop"* ]]; then
+            CHANGE_TYPE="Removed"
+          elif [[ "$PR_TITLE" == *"security"* ]]; then
+            CHANGE_TYPE="Security"
+          fi
+          
+          # Clean up the PR title to use as a changelog entry
+          # Remove prefixes like "feat:", "fix:", etc.
+          CHANGELOG_ENTRY=$(echo "$PR_TITLE" | sed -E 's/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z]+\))?:\s*//i')
+          
+          # Add PR number reference
+          CHANGELOG_ENTRY="$CHANGELOG_ENTRY (#$PR_NUMBER)"
+          
+          echo "change_type=$CHANGE_TYPE" >> $GITHUB_OUTPUT
+          echo "changelog_entry=$CHANGELOG_ENTRY" >> $GITHUB_OUTPUT
+
+      - name: Update CHANGELOG.md
+        run: |
+          CHANGE_TYPE="${{ steps.pr_info.outputs.change_type }}"
+          CHANGELOG_ENTRY="${{ steps.pr_info.outputs.changelog_entry }}"
+          
+          # Use Python to update the CHANGELOG
+          python - <<EOF
+          import re
+          
+          # Read current changelog
+          with open('CHANGELOG.md', 'r') as file:
+              changelog_content = file.read()
+          
+          # Find the Unreleased section
+          unreleased_pattern = r'## \[Unreleased\]\n\n(.*?)(?=\n## \[)'
+          unreleased_match = re.search(unreleased_pattern, changelog_content, re.DOTALL)
+          
+          if unreleased_match:
+              unreleased_section = unreleased_match.group(1)
+              
+              # Find or create the change type section
+              change_type = "${{ steps.pr_info.outputs.change_type }}"
+              entry = "- ${{ steps.pr_info.outputs.changelog_entry }}"
+              
+              change_type_pattern = fr'### {change_type}\n(.*?)(?=\n### |$)'
+              change_type_match = re.search(change_type_pattern, unreleased_section, re.DOTALL)
+              
+              if change_type_match:
+                  # Add entry to existing section
+                  updated_changes = change_type_match.group(1).strip() + "\n- " + entry
+                  updated_section = unreleased_section.replace(change_type_match.group(0), f"### {change_type}\n{updated_changes}")
+              else:
+                  # Create new section
+                  if "### " in unreleased_section:
+                      # Insert before the first existing change type
+                      first_change_type = re.search(r'### \w+', unreleased_section).group(0)
+                      updated_section = unreleased_section.replace(first_change_type, f"### {change_type}\n- {entry}\n\n{first_change_type}")
+                  else:
+                      # No change types yet
+                      updated_section = f"### {change_type}\n- {entry}\n"
+              
+              # Update the changelog content
+              updated_changelog = changelog_content.replace(unreleased_section, updated_section)
+              
+              with open('CHANGELOG.md', 'w') as file:
+                  file.write(updated_changelog)
+              
+              print(f"✅ Added '{entry}' to the '{change_type}' section of the CHANGELOG.md")
+          else:
+              print("❌ Could not find the Unreleased section in CHANGELOG.md")
+              exit(1)
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add CHANGELOG.md
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update CHANGELOG.md from PR #${{ github.event.pull_request.number }}"
+            git push
+          fi 
