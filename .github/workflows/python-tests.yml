@@ -46,17 +46,35 @@ jobs:
         pip install pytest pytest-cov
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
+        # Install the main package in development mode
+        pip install -e .
     
     - name: Download test audio file
       run: |
         mkdir -p test_data
         curl -L -o test_data/test_audio.wav https://filesamples.com/samples/audio/wav/sample1.wav
     
+    - name: Build C extensions (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd whispr/c_ext
+        chmod +x build_extensions.sh
+        ./build_extensions.sh
+        cd ../..
+      
+    - name: Build C extensions (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        cd whispr/c_ext
+        pip install -e .
+        cd ../..
+    
     - name: Test C extensions
       run: |
         cd whispr/c_ext
-        python test_extensions.py
-      continue-on-error: true
+        python simple_test.py
+        cd ../..
     
     - name: Run tests with pytest
       run: |

@@ -65,6 +65,9 @@ fi
 echo "🧹 Cleaning previous builds..."
 rm -rf build/ *.so *.pyd
 
+# Make sure numpy is accessible during the build
+export PYTHONPATH=$(pip show numpy | grep Location | awk '{print $2}'):$PYTHONPATH
+
 # Build and install the extensions
 echo "🚀 Building C extensions..."
 pip install -e .

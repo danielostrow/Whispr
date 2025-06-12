@@ -11,18 +11,30 @@ import os
 
 # Add parent directory to path to ensure we can import whispr
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+# Add current directory to path to ensure we can import the C extensions directly
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Try to import C extensions
 try:
-    from whispr.c_ext import (
-        frame_signal_c, 
-        simple_energy_vad_c, 
-        compute_frame_energy, 
-        separate_by_segmentation_c,
-        C_EXTENSIONS_AVAILABLE
-    )
-except ImportError:
-    print("❌ C extensions not available. Run build_extensions.sh first.")
+    # First try to import from the module
+    try:
+        from whispr.c_ext import (
+            frame_signal_c, 
+            simple_energy_vad_c, 
+            compute_frame_energy, 
+            separate_by_segmentation_c,
+            C_EXTENSIONS_AVAILABLE
+        )
+    except ImportError:
+        # If that fails, try direct imports
+        from framing_c import frame_signal_c
+        from vad_c import simple_energy_vad_c
+        from features_c import compute_frame_energy
+        from separation_c import separate_by_segmentation_c
+        C_EXTENSIONS_AVAILABLE = True
+except ImportError as e:
+    print(f"❌ C extensions not available. Error: {e}")
+    print("Run build_extensions.sh first.")
     sys.exit(1)
 
 # Import Python implementations for comparison

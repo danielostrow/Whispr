@@ -209,4 +209,15 @@ The PR number will be automatically appended to each changelog entry for referen
 
 ### Coding Style
 
-This project uses `black` for formatting and `flake8` for linting. Configuration is in `pyproject.toml` and `.flake8`. The `run.sh` script automatically applies formatting. 
+This project uses `black` for formatting and `flake8` for linting. Configuration is in `pyproject.toml` and `.flake8`. The `run.sh` script automatically applies formatting.
+
+### Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality. To set up pre-commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This will automatically format your code with black and isort, and check for other issues before each commit. 

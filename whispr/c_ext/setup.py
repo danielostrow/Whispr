@@ -7,6 +7,7 @@ import numpy as np
 # Initialize compiler flags
 extra_compile_args = []
 extra_link_args = []
+define_macros = [('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')]
 
 # Handle different operating systems
 system = platform.system()
@@ -59,6 +60,7 @@ else:
 print(f"Building extensions for {system} platform with:")
 print(f"  Compile args: {extra_compile_args}")
 print(f"  Link args: {extra_link_args}")
+print(f"  Define macros: {define_macros}")
 
 # Define extensions
 extensions = [
@@ -67,28 +69,32 @@ extensions = [
         sources=['src/framing.c'],
         include_dirs=[np.get_include()],
         extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args
+        extra_link_args=extra_link_args,
+        define_macros=define_macros
     ),
     Extension(
         'vad_c',
         sources=['src/vad.c'],
         include_dirs=[np.get_include()],
         extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args
+        extra_link_args=extra_link_args,
+        define_macros=define_macros
     ),
     Extension(
         'features_c',
         sources=['src/features.c'],
         include_dirs=[np.get_include()],
         extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args
+        extra_link_args=extra_link_args,
+        define_macros=define_macros
     ),
     Extension(
         'separation_c',
         sources=['src/separation.c'],
         include_dirs=[np.get_include()],
         extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args
+        extra_link_args=extra_link_args,
+        define_macros=define_macros
     )
 ]
 
@@ -97,4 +103,6 @@ setup(
     version="0.1",
     description="C extensions for Whispr",
     ext_modules=extensions,
+    setup_requires=['numpy>=1.20.0'],
+    install_requires=['numpy>=1.20.0'],
 ) 

@@ -1,6 +1,7 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <float.h>
+#include <stdbool.h>
 
 // Helper function to find median of array
 static float find_median(float *arr, npy_intp length) {

@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.11"]
     
     steps:
@@ -35,6 +35,11 @@ jobs:
       run: |
         brew install ffmpeg
     
+    - name: Install FFmpeg (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install ffmpeg -y
+    
     - name: Install OpenMP (macOS)
       if: matrix.os == 'macos-latest'
       run: |
@@ -45,12 +50,30 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
+        pip install -e .
+    
+    - name: Ensure stdbool.h include in vad.c
+      run: |
+        if [ "${{ runner.os }}" != "Windows" ]; then
+          grep -q "#include <stdbool.h>" whispr/c_ext/src/vad.c || sed -i '3a #include <stdbool.h>' whispr/c_ext/src/vad.c
+        else
+          # Windows version of the same command
+          powershell -Command "if (-not (Select-String -Path 'whispr/c_ext/src/vad.c' -Pattern '#include <stdbool.h>' -Quiet)) { (Get-Content 'whispr/c_ext/src/vad.c' | ForEach-Object { if ($_.Contains('#include <float.h>')) { '#include <float.h>'; '#include <stdbool.h>'; } else { $_ } }) | Set-Content 'whispr/c_ext/src/vad.c' }"
+        fi
     
     - name: Build C extensions
       run: |
         cd whispr/c_ext
         chmod +x build_extensions.sh
         ./build_extensions.sh
+      continue-on-error: true
+      if: runner.os != 'Windows'
+    
+    - name: Build C extensions (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd whispr/c_ext
+        python setup.py build_ext --inplace
       continue-on-error: true
     
     - name: Download test audio file
@@ -61,7 +84,7 @@ jobs:
     - name: Run pipeline on test file
       run: |
         mkdir -p output
-        python whispr/pipeline.py test_data/test_audio.wav --output-dir output
+        python -m whispr.pipeline test_data/test_audio.wav --output-dir output
     
     - name: Verify pipeline output
       run: |
@@ -71,7 +94,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Start the app in background and kill after a few seconds
-        timeout 10s python whispr/ui/app.py output/metadata.json || code=$?; if [ $code -ne 124 -a $code -ne 0 ]; then exit $code; fi
+        timeout 10s python -m whispr.ui.app output/metadata.json || code=$?; if [ $code -ne 124 -a $code -ne 0 ]; then exit $code; fi
     
     - name: Run application startup test (macOS)
       if: matrix.os == 'macos-latest'
@@ -79,9 +102,19 @@ jobs:
         # macOS doesn't have the same timeout command
         python -c "
         import subprocess, threading, time
-        process = subprocess.Popen(['python', 'whispr/ui/app.py', 'output/metadata.json'])
+        process = subprocess.Popen(['python', '-m', 'whispr.ui.app', 'output/metadata.json'])
         time.sleep(10)
         process.terminate()
+        "
+    
+    - name: Run application startup test (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        # Windows test
+        powershell -Command "
+        $process = Start-Process -FilePath python -ArgumentList '-m', 'whispr.ui.app', 'output/metadata.json' -PassThru
+        Start-Sleep -Seconds 10
+        Stop-Process -Id $process.Id -Force
         "
     
     - name: Upload test artifacts

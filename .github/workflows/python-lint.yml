@@ -22,6 +22,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
+        pip install -e .
         pip install flake8 black isort
     
     - name: Lint with flake8
@@ -29,10 +30,17 @@ jobs:
         flake8 whispr/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 whispr/ --count --exit-zero --max-complexity=10 --statistics
     
-    - name: Check formatting with black
+    # Only format the code, don't check/fail here - we'll format then check in a second step
+    - name: Format code with black and isort
       run: |
-        black --check whispr/
+        isort whispr/
+        black whispr/
     
-    - name: Check imports with isort
+    # Now verify if any changes were made by the formatting
+    - name: Verify formatting
       run: |
-        isort --check-only --profile black whispr/ 
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "::error::Code formatting issues detected. Run 'isort whispr/' and 'black whispr/' locally to fix."
+          git --no-pager diff
+          exit 1
+        fi 

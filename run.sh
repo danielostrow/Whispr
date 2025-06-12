@@ -97,10 +97,10 @@ if [[ "$USE_DOCKER" == "yes" ]]; then
     # Launch UI if we're on a system with a display
     if [[ -n "$DISPLAY" || "$OSTYPE" == "darwin"* ]]; then
         echo "📊 Launching UI..."
-        python whispr/ui/app.py "$OUTPUT_DIR/metadata.json"
+        python -m whispr.ui.app "$OUTPUT_DIR/metadata.json"
     else
         echo "⚠️ No display detected. UI not launched."
-        echo "To view results, run: python whispr/ui/app.py $OUTPUT_DIR/metadata.json"
+        echo "To view results, run: python -m whispr.ui.app $OUTPUT_DIR/metadata.json"
     fi
     
     exit 0
@@ -129,6 +129,7 @@ if [ ! -f "$VENV_ACTIVATE_PATH" ]; then
     # Install dependencies
     echo "📥 Installing dependencies..."
     pip install --upgrade pip
+    pip install -e .
     pip install -r requirements.txt -r requirements-dev.txt
 else
     source "$VENV_ACTIVATE_PATH"
@@ -138,6 +139,12 @@ fi
 # --- Build C Extensions ---
 EXTENSIONS_BUILD_SCRIPT="whispr/c_ext/build_extensions.sh"
 if [ -f "$EXTENSIONS_BUILD_SCRIPT" ]; then
+    # Fix missing stdbool.h in vad.c
+    if ! grep -q "#include <stdbool.h>" whispr/c_ext/src/vad.c; then
+        echo "🔧 Adding stdbool.h include to vad.c..."
+        sed -i '3a #include <stdbool.h>' whispr/c_ext/src/vad.c
+    fi
+    
     if [[ "$FORCE_REBUILD" == "yes" ]]; then
         echo "🔨 Forcing rebuild of C extensions..."
         chmod +x "$EXTENSIONS_BUILD_SCRIPT"
@@ -175,13 +182,13 @@ echo "✅ Linting complete."
 # 2. Run Processing Pipeline
 echo "🚀 Running processing pipeline..."
 METADATA_PATH="$OUTPUT_DIR/metadata.json"
-python3 -u whispr/pipeline.py "$AUDIO_FILE" --output-dir "$OUTPUT_DIR"
+python3 -m whispr.pipeline "$AUDIO_FILE" --output-dir "$OUTPUT_DIR"
 
 echo "✅ Pipeline complete. Metadata saved to: $METADATA_PATH"
 
 # 3. Launch UI
 echo "📊 Launching UI..."
 # The -u flag is for unbuffered output
-python3 -u whispr/ui/app.py "$METADATA_PATH"
+python3 -u -m whispr.ui.app "$METADATA_PATH"
 
 echo "✅ All done." 

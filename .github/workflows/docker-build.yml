@@ -18,6 +18,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
+      # Ensure vad.c includes stdbool.h
+      - name: Fix C extension files
+        run: |
+          grep -q "#include <stdbool.h>" whispr/c_ext/src/vad.c || sed -i '3a #include <stdbool.h>' whispr/c_ext/src/vad.c
+          cat whispr/c_ext/src/vad.c | head -n 10
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
