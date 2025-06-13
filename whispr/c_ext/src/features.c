@@ -2,6 +2,11 @@
 #include <numpy/arrayobject.h>
 #include <math.h>
 
+/* Define M_PI if it's not defined (Windows) */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 /* Check for OpenMP */
 #ifdef _OPENMP
 #include <omp.h>
@@ -54,8 +59,10 @@ static PyObject *compute_frame_energy(PyObject *self, PyObject *args) {
     /* Only use OpenMP directive if OpenMP is available */
     #ifdef _OPENMP
     #pragma omp parallel for
-    #endif
+    for (int i = 0; i < (int)num_frames; i++) {
+    #else
     for (npy_intp i = 0; i < num_frames; i++) {
+    #endif
         float energy = 0.0;
         float *frame = frames_data + i * frame_length;
         

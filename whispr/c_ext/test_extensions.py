@@ -80,7 +80,8 @@ def test_framing():
     print(f"C time:      {c_time:.6f}s")
     print(f"Speedup:     {speedup:.2f}x")
 
-    return py_frames, c_frames
+    # Use assertion instead of return
+    assert np.allclose(py_frames, c_frames), "Framing results don't match"
 
 
 def test_energy():
@@ -113,7 +114,8 @@ def test_energy():
     print(f"C time:      {c_time:.6f}s")
     print(f"Speedup:     {speedup:.2f}x")
 
-    return py_energy, c_energy
+    # Use assertion instead of return
+    assert np.allclose(py_energy, c_energy, rtol=1e-5), "Energy results don't match"
 
 
 def test_vad():
@@ -151,7 +153,8 @@ def test_vad():
     print(f"C time:      {c_time:.6f}s")
     print(f"Speedup:     {speedup:.2f}x")
 
-    return py_segments, c_segments
+    # Use assertion instead of return
+    assert py_segments == c_segments, "VAD results don't match"
 
 
 def main():
