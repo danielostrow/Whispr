@@ -33,14 +33,25 @@ jobs:
         # Install the main package in development mode
         pip install -e .
     
-    - name: Ensure stdbool.h include in vad.c
+    - name: Ensure stdbool.h include in vad.c (Unix)
+      if: runner.os != 'Windows'
       run: |
-        if [ "${{ runner.os }}" != "Windows" ]; then
-          grep -q "#include <stdbool.h>" whispr/c_ext/src/vad.c || sed -i '3a #include <stdbool.h>' whispr/c_ext/src/vad.c
-        else
-          # Windows version of the same command
-          powershell -Command "if (-not (Select-String -Path 'whispr/c_ext/src/vad.c' -Pattern '#include <stdbool.h>' -Quiet)) { (Get-Content 'whispr/c_ext/src/vad.c' | ForEach-Object { if ($_.Contains('#include <float.h>')) { '#include <float.h>'; '#include <stdbool.h>'; } else { $_ } }) | Set-Content 'whispr/c_ext/src/vad.c' }"
-        fi
+        grep -q "#include <stdbool.h>" whispr/c_ext/src/vad.c || sed -i '3a #include <stdbool.h>' whispr/c_ext/src/vad.c
+    
+    - name: Ensure stdbool.h include in vad.c (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (-not (Select-String -Path 'whispr/c_ext/src/vad.c' -Pattern '#include <stdbool.h>' -Quiet)) {
+          (Get-Content 'whispr/c_ext/src/vad.c' | ForEach-Object { 
+            if ($_.Contains('#include <float.h>')) { 
+              '#include <float.h>'
+              '#include <stdbool.h>'
+            } else { 
+              $_ 
+            } 
+          }) | Set-Content 'whispr/c_ext/src/vad.c'
+        }
         
     - name: Install OpenMP (macOS)
       if: runner.os == 'macOS'
