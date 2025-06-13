@@ -5,7 +5,7 @@ import numpy as np
 
 # Try to import C extensions
 try:
-    from ..c_ext import separate_by_segmentation_c, C_EXTENSIONS_AVAILABLE
+    from ..c_ext import C_EXTENSIONS_AVAILABLE, separate_by_segmentation_c
 except ImportError:
     C_EXTENSIONS_AVAILABLE = False
 
@@ -45,7 +45,7 @@ def _separate_by_segmentation(
     # Use C implementation if available
     if C_EXTENSIONS_AVAILABLE:
         return separate_by_segmentation_c(signal, sr, segments, labels)
-    
+
     # Fall back to Python implementation
     # Collect frame index segments per speaker
     speakers: Dict[str, List[tuple]] = {}

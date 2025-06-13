@@ -7,7 +7,7 @@ from ..config import Config
 from .framing import frame_signal
 
 try:
-    from ..c_ext import compute_frame_energy, C_EXTENSIONS_AVAILABLE
+    from ..c_ext import C_EXTENSIONS_AVAILABLE, compute_frame_energy
 except ImportError:
     C_EXTENSIONS_AVAILABLE = False
 
@@ -24,7 +24,7 @@ def extract_features(signal: np.ndarray, cfg: Config) -> Tuple[np.ndarray, np.nd
     hop_len = int(cfg.sample_rate * cfg.hop_length_ms / 1000)
 
     frames = frame_signal(signal, frame_len, hop_len)
-    
+
     # Use C implementation for energy computation if available
     if C_EXTENSIONS_AVAILABLE:
         energies = compute_frame_energy(frames)

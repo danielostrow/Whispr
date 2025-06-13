@@ -5,7 +5,7 @@ import numpy as np
 from ..config import Config
 
 try:
-    from ..c_ext import simple_energy_vad_c, C_EXTENSIONS_AVAILABLE
+    from ..c_ext import C_EXTENSIONS_AVAILABLE, simple_energy_vad_c
 except ImportError:
     C_EXTENSIONS_AVAILABLE = False
 
@@ -20,7 +20,7 @@ def simple_energy_vad(energies: np.ndarray, cfg: Config) -> List[Tuple[int, int]
         # Calculate min_frames from config
         min_frames = int((cfg.min_speech_duration_s * 1000) / cfg.hop_length_ms)
         return simple_energy_vad_c(energies, cfg.vad_energy_threshold, min_frames)
-    
+
     # Fall back to Python implementation
     med = np.median(energies)
     thresh = med * (1.0 + cfg.vad_energy_threshold)

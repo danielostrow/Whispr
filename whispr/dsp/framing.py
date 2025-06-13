@@ -1,7 +1,7 @@
 import numpy as np
 
 try:
-    from ..c_ext import frame_signal_c, C_EXTENSIONS_AVAILABLE
+    from ..c_ext import C_EXTENSIONS_AVAILABLE, frame_signal_c
 except ImportError:
     C_EXTENSIONS_AVAILABLE = False
 
@@ -26,7 +26,7 @@ def frame_signal(signal: np.ndarray, frame_length: int, hop_length: int) -> np.n
     # Use C implementation if available for better performance
     if C_EXTENSIONS_AVAILABLE:
         return frame_signal_c(signal, frame_length, hop_length)
-    
+
     # Fall back to numpy implementation
     num_frames = 1 + int((len(signal) - frame_length) / hop_length)
     shape = (num_frames, frame_length)

@@ -60,13 +60,23 @@ def run_pipeline(audio_path: Path, cfg: Config) -> Path:
 
 def main():
     """Parse CLI arguments and run the pipeline."""
-    parser = argparse.ArgumentParser(description="Run Whispr pipeline on an audio file.")
-    parser.add_argument("audio", type=Path, help="Path to input audio file (wav, mp3, etc.)")
-    parser.add_argument(
-        "--output-dir", type=Path, default=Path("output"), help="Directory to save results."
+    parser = argparse.ArgumentParser(
+        description="Run Whispr pipeline on an audio file."
     )
     parser.add_argument(
-        "--sample-rate", type=int, default=16000, help="Target sample rate for processing."
+        "audio", type=Path, help="Path to input audio file (wav, mp3, etc.)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("output"),
+        help="Directory to save results.",
+    )
+    parser.add_argument(
+        "--sample-rate",
+        type=int,
+        default=16000,
+        help="Target sample rate for processing.",
     )
     args = parser.parse_args()
 

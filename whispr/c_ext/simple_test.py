@@ -14,15 +14,22 @@ extensions_found = True
 try:
     # Try direct imports first
     try:
-        from framing_c import frame_signal_c
-        from vad_c import simple_energy_vad_c
         from features_c import compute_frame_energy
+        from framing_c import frame_signal_c
         from separation_c import separate_by_segmentation_c
+        from vad_c import simple_energy_vad_c
+
         print("✅ Successfully imported C extensions directly")
     except ImportError:
         # Try package imports
         sys.path.insert(0, os.path.join(current_dir, "../.."))
-        from whispr.c_ext import frame_signal_c, simple_energy_vad_c, compute_frame_energy, separate_by_segmentation_c
+        from whispr.c_ext import (
+            compute_frame_energy,
+            frame_signal_c,
+            separate_by_segmentation_c,
+            simple_energy_vad_c,
+        )
+
         print("✅ Successfully imported C extensions through package")
 except ImportError as e:
     extensions_found = False
@@ -31,4 +38,4 @@ except ImportError as e:
 
 print("\n=== C Extension Status ===")
 print(f"Extensions found: {extensions_found}")
-print("All C extensions verified.") 
+print("All C extensions verified.")
