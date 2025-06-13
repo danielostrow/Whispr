@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -86,6 +87,28 @@ def _separate_by_segmentation(
     return out
 
 
+def _find_asteroid_model():
+    """Find the Asteroid model file.
+    
+    Returns:
+        Path to the model file or None if not found
+    """
+    # Paths to check for our custom model
+    paths_to_check = [
+        "models/whispr_asteroid_model.pth",
+        os.path.join(os.path.dirname(__file__), "../../models/whispr_asteroid_model.pth"),
+        os.path.expanduser("~/.whispr/models/whispr_asteroid_model.pth")
+    ]
+    
+    for path in paths_to_check:
+        if os.path.exists(path):
+            log.info(f"Found custom Asteroid model at {path}")
+            return path
+    
+    log.info("No custom Asteroid model found, will use default pretrained model")
+    return None
+
+
 def _asteroid_separate(
     signal: np.ndarray, sr: int, max_speakers: int = 2
 ) -> Optional[List[Dict]]:
@@ -118,9 +141,19 @@ def _asteroid_separate(
         )
         return None
 
-    # Load pre-trained model (2-speaker LibriMix)
+    # Try to load our custom trained model first
+    custom_model_path = _find_asteroid_model()
+    
+    # Load model (custom if available, otherwise pretrained)
     try:
-        model = ConvTasNet.from_pretrained("mpariente/ConvTasNet_LibriMix_sepclean_16k")
+        if custom_model_path:
+            model = ConvTasNet(n_src=2)  # Initialize with same architecture
+            model.load_state_dict(torch.load(custom_model_path, map_location='cpu'))
+            log.info("Using custom trained Asteroid model")
+        else:
+            # Fall back to pretrained model
+            model = ConvTasNet.from_pretrained("mpariente/ConvTasNet_LibriMix_sepclean_16k")
+            log.info("Using default pretrained Asteroid model")
     except (RuntimeError, OSError) as e:
         log.error(f"Failed to load Asteroid model: {e}. Cannot perform separation.")
         return None
@@ -141,7 +174,7 @@ def _asteroid_separate(
         src = est_sources[idx]
         tracks.append(
             {
-                "id": f"Asteroid_Source_{idx + 1}",
+                "id": f"Speaker_{idx + 1}",  # Changed from "Asteroid_Source_" to match segmentation naming
                 "signal": src.astype(np.float32),
                 "sr": sr,
                 "segments": [(0.0, len(src) / sr)],

@@ -1,0 +1,93 @@
+{
+  "recording_id": "chime6_kitchen",
+  "room_dimensions": {
+    "width": 4.5,
+    "length": 5.2,
+    "height": 2.7
+  },
+  "microphone_array": {
+    "position": {
+      "x": 2.25,
+      "y": 2.6,
+      "z": 1.1
+    },
+    "type": "linear",
+    "channels": 4
+  },
+  "speakers": [
+    {
+      "id": "SPEAKER_01",
+      "position": {
+        "x": 1.2,
+        "y": 3.8,
+        "z": 1.2
+      },
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 3.5
+        },
+        {
+          "start": 10.2,
+          "end": 15.6
+        }
+      ]
+    },
+    {
+      "id": "SPEAKER_02",
+      "position": {
+        "x": 3.8,
+        "y": 3.2,
+        "z": 1.2
+      },
+      "segments": [
+        {
+          "start": 4.1,
+          "end": 9.7
+        },
+        {
+          "start": 16.3,
+          "end": 19.8
+        }
+      ]
+    },
+    {
+      "id": "SPEAKER_03",
+      "position": {
+        "x": 2.5,
+        "y": 1.4,
+        "z": 1.2
+      },
+      "segments": [
+        {
+          "start": 7.3,
+          "end": 11.5,
+          "overlaps_with": ["SPEAKER_01"]
+        },
+        {
+          "start": 20.4,
+          "end": 24.7
+        }
+      ]
+    },
+    {
+      "id": "SPEAKER_04",
+      "position": {
+        "x": 3.6,
+        "y": 0.9,
+        "z": 1.2
+      },
+      "segments": [
+        {
+          "start": 12.8,
+          "end": 17.2,
+          "overlaps_with": ["SPEAKER_02"]
+        },
+        {
+          "start": 22.1,
+          "end": 26.5
+        }
+      ]
+    }
+  ]
+} 

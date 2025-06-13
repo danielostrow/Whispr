@@ -10,3 +10,4 @@ class Config:
     vad_energy_threshold: float = 0.01  # relative energy
     min_speech_duration_s: float = 0.3  # merge small segments
     output_dir: Path = Path("output")
+    model_dir: Path = Path("models")  # directory containing trained models
