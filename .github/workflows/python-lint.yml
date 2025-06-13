@@ -30,17 +30,18 @@ jobs:
         flake8 whispr/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 whispr/ --count --exit-zero --max-complexity=10 --statistics
     
-    # Only format the code, don't check/fail here - we'll format then check in a second step
-    - name: Format code with black and isort
+    # Check formatting without modifying files
+    - name: Check formatting with isort
       run: |
-        isort whispr/
-        black whispr/
+        isort --check --diff whispr/
     
-    # Now verify if any changes were made by the formatting
-    - name: Verify formatting
+    - name: Check formatting with black
       run: |
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "::error::Code formatting issues detected. Run 'isort whispr/' and 'black whispr/' locally to fix."
-          git --no-pager diff
-          exit 1
-        fi 
+        black --check --diff whispr/
+    
+    # Provide helpful error message if formatting checks fail
+    - name: Formatting instructions
+      if: failure()
+      run: |
+        echo "::error::Code formatting issues detected. Run 'isort whispr/' and 'black whispr/' locally to fix."
+        echo "::notice::You can also run 'pre-commit run --all-files' if you have pre-commit installed." 
