@@ -9,8 +9,12 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -30,18 +34,21 @@ jobs:
         flake8 whispr/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 whispr/ --count --exit-zero --max-complexity=10 --statistics
     
-    # Check formatting without modifying files
-    - name: Check formatting with isort
+    # Format the code and commit changes if needed
+    - name: Format code with isort and black
       run: |
-        isort --check --diff whispr/
+        isort whispr/
+        black whispr/
     
-    - name: Check formatting with black
+    - name: Commit auto-formatted files
       run: |
-        black --check --diff whispr/
-    
-    # Provide helpful error message if formatting checks fail
-    - name: Formatting instructions
-      if: failure()
-      run: |
-        echo "::error::Code formatting issues detected. Run 'isort whispr/' and 'black whispr/' locally to fix."
-        echo "::notice::You can also run 'pre-commit run --all-files' if you have pre-commit installed." 
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        if [[ -n "$(git status --porcelain)" ]]; then
+          git add whispr/
+          git commit -m "Auto-format Python code with isort and black"
+          git push
+        else
+          echo "No formatting changes needed"
+        fi 
