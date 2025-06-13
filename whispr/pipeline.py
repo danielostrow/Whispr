@@ -1,5 +1,5 @@
-from pathlib import Path
 import logging
+from pathlib import Path
 from typing import Optional
 
 from .config import Config
@@ -10,7 +10,6 @@ from .localization import assign_locations
 from .ml.clustering import cluster_speakers
 from .ml.separation import separate
 from .ml.vad import simple_energy_vad
-
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ def run_pipeline(audio_path: Path, cfg: Config) -> Path:
         RuntimeError: If no speech is detected in the audio.
     """
     log.info(f"Processing audio file: {audio_path}")
-    
+
     # 1. Load audio
     mono, sr = load_audio(audio_path, cfg)
     log.info(f"Loaded audio: {len(mono)/sr:.2f}s at {sr}Hz")
@@ -75,13 +74,13 @@ def run_pipeline(audio_path: Path, cfg: Config) -> Path:
 def main():
     """Parse CLI arguments and run the pipeline."""
     import argparse
-    
+
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     parser = argparse.ArgumentParser(
         description="Run Whispr pipeline on an audio file."
     )
