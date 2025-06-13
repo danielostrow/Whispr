@@ -89,22 +89,24 @@ def _separate_by_segmentation(
 
 def _find_asteroid_model():
     """Find the Asteroid model file.
-    
+
     Returns:
         Path to the model file or None if not found
     """
     # Paths to check for our custom model
     paths_to_check = [
         "models/whispr_asteroid_model.pth",
-        os.path.join(os.path.dirname(__file__), "../../models/whispr_asteroid_model.pth"),
-        os.path.expanduser("~/.whispr/models/whispr_asteroid_model.pth")
+        os.path.join(
+            os.path.dirname(__file__), "../../models/whispr_asteroid_model.pth"
+        ),
+        os.path.expanduser("~/.whispr/models/whispr_asteroid_model.pth"),
     ]
-    
+
     for path in paths_to_check:
         if os.path.exists(path):
             log.info(f"Found custom Asteroid model at {path}")
             return path
-    
+
     log.info("No custom Asteroid model found, will use default pretrained model")
     return None
 
@@ -143,16 +145,18 @@ def _asteroid_separate(
 
     # Try to load our custom trained model first
     custom_model_path = _find_asteroid_model()
-    
+
     # Load model (custom if available, otherwise pretrained)
     try:
         if custom_model_path:
             model = ConvTasNet(n_src=2)  # Initialize with same architecture
-            model.load_state_dict(torch.load(custom_model_path, map_location='cpu'))
+            model.load_state_dict(torch.load(custom_model_path, map_location="cpu"))
             log.info("Using custom trained Asteroid model")
         else:
             # Fall back to pretrained model
-            model = ConvTasNet.from_pretrained("mpariente/ConvTasNet_LibriMix_sepclean_16k")
+            model = ConvTasNet.from_pretrained(
+                "mpariente/ConvTasNet_LibriMix_sepclean_16k"
+            )
             log.info("Using default pretrained Asteroid model")
     except (RuntimeError, OSError) as e:
         log.error(f"Failed to load Asteroid model: {e}. Cannot perform separation.")

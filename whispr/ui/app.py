@@ -22,7 +22,7 @@ def prepare_data(metadata: Dict[str, Any]) -> pd.DataFrame:
         x = location[0]
         y = location[1]
         z = location[2] if len(location) > 2 else 0.0
-        
+
         records.append(
             {
                 "id": spk["id"],
@@ -39,7 +39,7 @@ def create_speaker_map(df: pd.DataFrame) -> go.Figure:
     """Create a Plotly 3D scatter plot of speaker locations."""
     # Check if we have meaningful Z values
     has_z_dimension = df["z"].abs().sum() > 0.01
-    
+
     if has_z_dimension:
         # Create 3D scatter plot
         fig = px.scatter_3d(
@@ -86,30 +86,36 @@ def create_speaker_map(df: pd.DataFrame) -> go.Figure:
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="white"),
         )
-    
+
     # Add room outline
     if has_z_dimension:
         # Add a transparent cube to represent the room (assuming 5x5x3m room)
         room_width, room_length, room_height = 5.0, 5.0, 3.0
-        
+
         # Create the 8 corners of the cube
         x = [0, room_width, room_width, 0, 0, room_width, room_width, 0]
         y = [0, 0, room_length, room_length, 0, 0, room_length, room_length]
         z = [0, 0, 0, 0, room_height, room_height, room_height, room_height]
-        
+
         # Define the 12 edges of the cube
         i = [0, 0, 0, 1, 1, 2, 2, 3, 4, 4, 4, 5, 5, 6, 6, 7]
         j = [1, 3, 4, 2, 5, 3, 6, 7, 5, 7, 0, 6, 1, 7, 2, 3]
-        
+
         # Create a mesh3d trace for the room
-        fig.add_trace(go.Mesh3d(
-            x=x, y=y, z=z,
-            i=i, j=j, k=[],
-            opacity=0.1,
-            color='lightblue',
-            hoverinfo='none'
-        ))
-    
+        fig.add_trace(
+            go.Mesh3d(
+                x=x,
+                y=y,
+                z=z,
+                i=i,
+                j=j,
+                k=[],
+                opacity=0.1,
+                color="lightblue",
+                hoverinfo="none",
+            )
+        )
+
     return fig
 
 
@@ -149,18 +155,18 @@ def build_app(metadata_path: Path) -> Dash:
             point_data = clickData["points"][0]
             audio_file = point_data["customdata"][0]
             speaker_id = point_data["hovertext"]
-            
+
             # Get coordinates for display
             x = point_data["x"]
             y = point_data["y"]
             z = point_data.get("z", 0)  # Handle both 2D and 3D plots
-            
+
             info_text = [
                 html.H3(f"Speaker: {speaker_id}"),
                 html.P(f"Location: X={x:.2f}m, Y={y:.2f}m, Z={z:.2f}m"),
-                html.P(f"Audio: {audio_file}")
+                html.P(f"Audio: {audio_file}"),
             ]
-            
+
             return f"{ASSETS_URL_PATH}{audio_file}", info_text
         return dash.no_update, dash.no_update
 
