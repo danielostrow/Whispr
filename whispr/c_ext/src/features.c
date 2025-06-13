@@ -56,10 +56,13 @@ static PyObject *compute_frame_energy(PyObject *self, PyObject *args) {
     float *frames_data = (float *) PyArray_DATA(frames);
     float *energies_data = (float *) PyArray_DATA(energies);
     
+    // Convert to int for loop iterations
+    int num_frames_int = (int)num_frames;
+    
     /* Only use OpenMP directive if OpenMP is available */
     #ifdef _OPENMP
     #pragma omp parallel for
-    for (int i = 0; i < (int)num_frames; i++) {
+    for (int i = 0; i < num_frames_int; i++) {
     #else
     for (npy_intp i = 0; i < num_frames; i++) {
     #endif
