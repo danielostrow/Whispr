@@ -11,9 +11,7 @@ import time
 import numpy as np
 
 # Add parent directory to path to ensure we can import whispr
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-# Add current directory to path to ensure we can import the C extensions directly
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Try to import C extensions
 try:
@@ -28,10 +26,10 @@ try:
         )
     except ImportError:
         # If that fails, try direct imports
-        from features_c import compute_frame_energy
-        from framing_c import frame_signal_c
-        from separation_c import separate_by_segmentation_c
-        from vad_c import simple_energy_vad_c
+        from whispr.c_ext.features_c import compute_frame_energy
+        from whispr.c_ext.framing_c import frame_signal_c
+        from whispr.c_ext.separation_c import separate_by_segmentation_c
+        from whispr.c_ext.vad_c import simple_energy_vad_c
 
         C_EXTENSIONS_AVAILABLE = True
 except ImportError as e:
