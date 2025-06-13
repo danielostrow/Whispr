@@ -56,17 +56,31 @@ static PyObject *compute_frame_energy(PyObject *self, PyObject *args) {
     float *frames_data = (float *) PyArray_DATA(frames);
     float *energies_data = (float *) PyArray_DATA(energies);
     
-    // Convert to int for loop iterations
+    // Convert dimensions to int for OpenMP
     int num_frames_int = (int)num_frames;
+    int frame_length_int = (int)frame_length;
     
-    /* Only use OpenMP directive if OpenMP is available */
+    // Compute energy for each frame
     #ifdef _OPENMP
-    #pragma omp parallel for
-    for (int i = 0; i < num_frames_int; i++) {
+    #pragma omp parallel
+    {
+        #pragma omp for
+        for (int i = 0; i < num_frames_int; i++) {
+            float energy = 0.0f;
+            float *frame = frames_data + i * frame_length_int;
+            
+            for (int j = 0; j < frame_length_int; j++) {
+                float windowed_sample = frame[j] * window[j];
+                energy += windowed_sample * windowed_sample;
+            }
+            
+            energies_data[i] = energy;
+        }
+    }
     #else
+    // Non-OpenMP version
     for (npy_intp i = 0; i < num_frames; i++) {
-    #endif
-        float energy = 0.0;
+        float energy = 0.0f;
         float *frame = frames_data + i * frame_length;
         
         for (npy_intp j = 0; j < frame_length; j++) {
@@ -76,6 +90,7 @@ static PyObject *compute_frame_energy(PyObject *self, PyObject *args) {
         
         energies_data[i] = energy;
     }
+    #endif
     
     // Clean up
     free(window);
